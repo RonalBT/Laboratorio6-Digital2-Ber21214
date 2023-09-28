@@ -1,0 +1,202 @@
+/*
+  Laboratorio 6 - Electrónica Digital 2
+  Ronal Andrés Berganza Torres - 21214
+ */
+
+#include <SPI.h>
+#include <SD.h>
+
+File direccionsd;
+File archivo;
+int menu;
+
+//colocar datos en la sd
+void ubicacionsd(File ubi, int numTabs){
+  while(true){
+
+    File entry = ubi.openNextFile();
+    if (!entry){
+      //no more files
+      break;
+    }
+    for (uint8_t i=0; i<numTabs; i++){
+      Serial.print('\t'); 
+    }
+    Serial.print(entry.name());
+    if (entry.isDirectory()){
+      Serial.println("/");
+      ubicacionsd(entry, numTabs+1);
+    } else {
+      //files have sizes, directories do not
+      Serial.print("\t\t");
+      Serial.println(entry.size(), DEC);
+    }
+    entry.close();
+  }
+}
+//************************************************************************
+//mostrar o imprimir el logo del barcelona
+void logobarcelona(){
+  archivo = SD.open("logo.txt");//archivo.txt del caballo
+  if(archivo){
+    Serial.println("logo.TXT: ");//sale en la terminal
+
+    while (archivo.available()){
+      Serial.write(archivo.read());
+    }
+    //cerrar archivo
+    archivo.close();
+  } else{
+    Serial.println("Error para abirir logo.TXT");//por si no se logra abrir
+  }
+  menuprincipal();
+}
+//***************************************************************************
+//mostrar o imprimir una pelota de fútbol
+void futbol(){
+  archivo = SD.open("futbol.txt");//archivo.txt de la flor
+  if(archivo){
+    Serial.println("futbol.TXT: ");//sale en la terminal
+
+    while (archivo.available()){
+      Serial.write(archivo.read());
+    }
+    //cerrar archivo
+    archivo.close();
+  } else{
+    Serial.println("Error para abirir futbol.TXT");//por si no se logra abrir
+  }
+  menuprincipal();
+}
+//****************************************************************************
+//mostrar o imprimir una pelota de fútbol americano
+void americano(){
+  archivo = SD.open("AMERIC~1.txt");//archivo.txt del carro
+  if(archivo){
+    Serial.println("AMERIC~1.TXT: ");//sale en la terminal
+
+    while (archivo.available()){
+      Serial.write(archivo.read());
+    }
+    //cerrar archivo
+    archivo.close();
+  } else{
+    Serial.println("Error para abirir americano.TXT");//por si no se logra abrir
+  }
+  menuprincipal();
+}
+
+//menu que muestra en la terminal las opciones de acciones a realizar
+void menuprincipal(){
+  Serial.println("");
+  Serial.println("seleccione la acción a realizar?");
+  Serial.println("Presione 0 para abrir los archivos presentes en la SD");
+  Serial.println("Presione 1 para visualizar el logo del FC Barcelona");
+  Serial.println("Presione 2 para visualizar una balón de futbol");
+  Serial.println("Presione 3 para visualizar un balon de futbol americano");
+  Serial.println("Presione 4 para dibujar una imagen y almacenarla"); 
+  Serial.println("");  
+}
+
+//Función para dibujar y almacenar un dibujo en un archivo nuevo de la sd
+void dibujar()
+{ //Instrucciones de núemeros a presionar según lo que se desee hacer en la función para dibujar
+  Serial.println("Dibuje un círculo en la terminal utilizando caracteres.");
+  Serial.println("Utilice '5' para dibujar y '6' para terminar y guardar.");
+//Aquí almacenamos el dibujo nuevo
+  String dibujo = "";  
+
+  while (true)
+  {
+    if (Serial.available() > 0)
+    {
+      char c = Serial.read();
+
+      // Se debe presionar 6 para iniciar el almacenamiento del nuevo dibujo
+      if (c == '6')
+      {
+        Serial.println("Guardando el dibujo...");
+
+        // se procede a crear un archivo donde se almacene el dibujo en la sd
+        archivo = SD.open("dibujo.txt", FILE_WRITE);
+
+        if (archivo)
+        {
+          archivo.print(dibujo);
+          archivo.close();
+          Serial.println("Dibujo guardado correctamente como circulo.txt");
+        }
+        else
+        {
+          Serial.println("Error al guardar el dibujo.");
+        }
+
+        menuprincipal();
+        break;
+      }
+
+      // Se empieza a dibujar con el carácter seleccionado cuando se presione 5
+      if (c == '5')
+      {
+        dibujo += '*';  
+        Serial.print('*');
+      }
+      else
+      {
+        Serial.print(c);
+      }
+    }
+  }
+}
+
+//Se abre la función correspondiente al número que la persona coloque en el menú
+void loop()
+{
+  if(Serial.available()> 0){
+    //menu es la variable para conocer la acción a realizar
+    menu = Serial.read();
+    if(menu == '1'){
+      logobarcelona();
+    }
+    else if(menu == '2'){
+      futbol();
+    }
+    else if(menu == '3'){
+      americano();
+    }
+    else if (menu == '4') 
+    {
+      dibujar();
+    }
+    else if(menu == '0'){
+      archivo = SD.open("/");
+      ubicacionsd(archivo,0);
+      menuprincipal();  
+    }
+    else {
+      Serial.println("");//se vuelve a mostrar el menu cuando se presiona cualquier tecla
+      //Serial.write(menu);
+    }
+  }
+  
+}
+
+//Setup
+void setup()
+{
+  // Se inicia la comunicación serial:
+  Serial.begin(115200);
+  SPI.setModule(0);
+  Serial.print("Initializando tarjeta SD...");
+  pinMode(PA_3, OUTPUT);
+
+  if (!SD.begin(PA_3)) {
+    Serial.println("fallo iniciando la sd");//nota por si no se logra conectar a la sd 
+  }
+  Serial.println("conexión establecida con la sd.");//nota cuando se logre conectar a la sd
+//Variable donde abrimos la sd
+  direccionsd = SD.open("/");
+  ubicacionsd(direccionsd,0);
+  Serial.println("conectado");//se confirma la conexión con la sd
+  menuprincipal();
+} 
